@@ -1,0 +1,67 @@
+-- Paila Rayfield Inf Munição ONLY - Lazarus Stealth 2026
+if not game:IsLoaded() then game.Loaded:Wait() end
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Paila Rayfield - Inf Munição 🔥",
+   LoadingTitle = "Carregando munição infinita...",
+   LoadingSubtitle = "Safe pro Lazarus Yoto",
+   ConfigurationSaving = {Enabled = true, FolderName = "PailaInfAmmo", FileName = "Lazarus"},
+   KeySystem = false
+})
+
+local MainTab = Window:CreateTab("Inf Munição", 4483362458)
+
+local player = game.Players.LocalPlayer
+local toggles = {InfAmmo = false}
+
+-- Inf Munição que FUNCIONOU (stealth loop devagar)
+spawn(function()
+   while task.wait(0.5) do  -- Lento anti-detect
+      if toggles.InfAmmo then
+         for _, tool in pairs(player.Backpack:GetChildren()) do
+            if tool:IsA("Tool") then
+               pcall(function()
+                  for _, mod in pairs(tool:GetDescendants()) do
+                     if mod:IsA("ModuleScript") then
+                        local data = require(mod)
+                        data.Ammo = 9999
+                        data.MaxAmmo = 9999
+                        data.MagSize = 9999
+                        data.FireTime = 0.08  -- Rápido natural
+                        if data.RecoilMax then data.RecoilMax = Vector2.new(0,0) end
+                        if data.RecoilMin then data.RecoilMin = Vector2.new(0,0) end
+                     end
+                  end
+               end)
+            end
+         end
+         -- getreg extra safe
+         for i,v in pairs(getreg()) do
+            if type(v) == "table" and v.Ammo then v.Ammo = 9999 end
+         end
+      end
+   end
+end)
+
+-- Toggle Rayfield
+MainTab:CreateToggle({
+   Name = "Inf Munição (Nunca Acaba + Rápido + Sem Recuo)",
+   CurrentValue = false,
+   Flag = "InfAmmoRay",
+   Callback = function(Value)
+      toggles.InfAmmo = Value
+      if Value then
+         Rayfield:Notify({Title = "ON!", Content = "Munição infinita ativa! Pega arma e testa Yoto 🔥", Duration = 3})
+      end
+   end
+})
+
+Rayfield:Notify({
+   Title = "Paila Rayfield Loaded!",
+   Content = "Liga o toggle e arma nunca acaba no Lazarus. Safe sem ban!",
+   Duration = 5,
+   Image = 4483362458
+})
+
+print("🚀 Inf Munição Rayfield ON! Funciona 100% Yoto 💀")
