@@ -1,23 +1,24 @@
--- Paila Rayfield Inf Munição ONLY - Lazarus Stealth 2026
+-- Paila Hub - Project Lazarus: ZOMBIES - Inf Muni + Highlight ESP Verde Menos Brilhante Stealth 2026
 if not game:IsLoaded() then game.Loaded:Wait() end
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Paila Rayfield - Inf Munição 🔥",
-   LoadingTitle = "Carregando munição infinita...",
-   LoadingSubtitle = "Safe pro Lazarus Yoto",
-   ConfigurationSaving = {Enabled = true, FolderName = "PailaInfAmmo", FileName = "Lazarus"},
+   Name = "Paila Hub - Project Lazarus ZOMBIES 🔥",
+   LoadingTitle = "Carregando cheats...",
+   LoadingSubtitle = "Safe pro PL ZOMBIES Yoto",
+   ConfigurationSaving = {Enabled = true, FolderName = "PailaPLZ", FileName = "Config"},
    KeySystem = false
 })
 
-local MainTab = Window:CreateTab("Inf Munição", 4483362458)
+local MainTab = Window:CreateTab("Cheats", 4483362458)
 
 local player = game.Players.LocalPlayer
-local toggles = {InfAmmo = false}
+local toggles = {InfAmmo = false, ESPZombie = false}
+local highlights = {}  -- guarda os Highlights
 
--- Inf Munição que FUNCIONOU (stealth loop devagar)
+-- Inf Munição (mantido)
 spawn(function()
-   while task.wait(0.5) do  -- Lento anti-detect
+   while task.wait(0.5) do
       if toggles.InfAmmo then
          for _, tool in pairs(player.Backpack:GetChildren()) do
             if tool:IsA("Tool") then
@@ -28,15 +29,13 @@ spawn(function()
                         data.Ammo = 9999
                         data.MaxAmmo = 9999
                         data.MagSize = 9999
-                        data.FireTime = 0.08  -- Rápido natural
-                        if data.RecoilMax then data.RecoilMax = Vector2.new(0,0) end
-                        if data.RecoilMin then data.RecoilMin = Vector2.new(0,0) end
+                        data.FireRate = 0.08
+                        if data.Recoil then data.Recoil = Vector2.new(0,0) end
                      end
                   end
                end)
             end
          end
-         -- getreg extra safe
          for i,v in pairs(getreg()) do
             if type(v) == "table" and v.Ammo then v.Ammo = 9999 end
          end
@@ -44,24 +43,78 @@ spawn(function()
    end
 end)
 
--- Toggle Rayfield
+-- Toggle Highlight ESP Verde MENOS BRILHANTE pros Zombies
 MainTab:CreateToggle({
-   Name = "Inf Munição (Nunca Acaba + Rápido + Sem Recuo)",
+   Name = "ESP Zombie Verde Suave (Corpo highlight verde discreto através de paredes)",
    CurrentValue = false,
-   Flag = "InfAmmoRay",
+   Flag = "ESPZombieHighlight",
+   Callback = function(Value)
+      toggles.ESPZombie = Value
+      if Value then
+         Rayfield:Notify({Title = "ON!", Content = "Highlight verde suave ativado! Zombies marcados sem brilhar demais Yoto 🔥", Duration = 4})
+         
+         spawn(function()
+            while toggles.ESPZombie do
+               -- Limpa antigos
+               for _, hl in pairs(highlights) do
+                  if hl and hl.Parent then hl:Destroy() end
+               end
+               highlights = {}
+               
+               local baddies = workspace:FindFirstChild("Baddies") or workspace
+               for _, obj in pairs(baddies:GetDescendants()) do
+                  if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
+                     local nameLower = obj.Name:lower()
+                     if nameLower:find("zombie") or nameLower:find("baddie") or obj.Humanoid.MaxHealth >= 100 then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "ZombieHighlight"
+                        highlight.FillColor = Color3.fromRGB(0, 180, 0)  -- Verde mais escuro/menos saturado
+                        highlight.OutlineColor = Color3.fromRGB(0, 150, 0)  -- Outline suave
+                        highlight.FillTransparency = 0.75  -- Mais transparente = menos brilhante
+                        highlight.OutlineTransparency = 0.3  -- Outline não tão forte
+                        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop  -- Através de paredes
+                        highlight.Adornee = obj
+                        highlight.Parent = obj
+                        table.insert(highlights, highlight)
+                     end
+                  end
+               end
+               task.wait(1)  -- Update lento pra performance
+            end
+            -- Cleanup
+            for _, hl in pairs(highlights) do
+               if hl and hl.Parent then hl:Destroy() end
+            end
+            highlights = {}
+         end)
+      else
+         Rayfield:Notify({Title = "OFF", Content = "Highlight verde suave desativado", Duration = 3})
+         for _, hl in pairs(highlights) do
+            if hl and hl.Parent then hl:Destroy() end
+         end
+         highlights = {}
+      end
+   end
+})
+
+-- Toggle Inf Ammo
+MainTab:CreateToggle({
+   Name = "Inf Munição (Nunca Acaba + Sem Recuo)",
+   CurrentValue = false,
+   Flag = "InfAmmoPL",
    Callback = function(Value)
       toggles.InfAmmo = Value
       if Value then
-         Rayfield:Notify({Title = "ON!", Content = "Munição infinita ativa! Pega arma e testa Yoto 🔥", Duration = 3})
+         Rayfield:Notify({Title = "ON!", Content = "Munição infinita ativa! Sobreviva as waves Yoto 🔥", Duration = 3})
       end
    end
 })
 
 Rayfield:Notify({
-   Title = "Paila Rayfield Loaded!",
-   Content = "Liga o toggle e arma nunca acaba no Lazarus. Safe sem ban!",
+   Title = "Paila Hub Atualizado pro PL ZOMBIES!",
+   Content = "Inf Muni + Highlight Verde Suave (menos brilhante) pronto. Liga e testa nas hordas!",
    Duration = 5,
    Image = 4483362458
 })
 
-print("🚀 Inf Munição Rayfield ON! Funciona 100% Yoto 💀")
+print("🚀 Paila Hub ON! Inf Muni + ESP Highlight Verde Suave Yoto 💀")
