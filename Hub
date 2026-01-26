@@ -29,7 +29,7 @@ spawn(function()
                         data.Ammo = 9999
                         data.MaxAmmo = 9999
                         data.MagSize = 9999
-                        data.FireRate = 0.08
+                        data.FireRate = 0.01
                         if data.Recoil then data.Recoil = Vector2.new(0,0) end
                      end
                   end
