@@ -1,112 +1,147 @@
--- Paila Hub v6 - Abyss [BETA] FIX INF O2 + AUTO FARM by Paila (pro Yoto)
+-- Paila Hub v7 ULTIMATE - Abyss [BETA] FULL ESP + FIX FARM/O2 by Paila (pro Yoto)
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("Paila Hub v6 - Abyss FIX", "Midnight")
+local Window = Library.CreateLib("Paila Hub v7 - Abyss ULTIMATE", "Midnight")
 
 local player = game.Players.LocalPlayer
 local rs = game:GetService("ReplicatedStorage")
+local ts = game:GetService("TeleportService")
 local tween = game:GetService("TweenService")
 local run = game:GetService("RunService")
+local cam = workspace.CurrentCamera
 
--- Encontra remotes reais (genérico pros que mudam)
+-- Encontra TODOS remotes úteis (fish/harpoon/catch/sell/oxygen)
 local remotes = {}
 for _, v in pairs(rs:GetDescendants()) do
-    if v:IsA("RemoteEvent") and (v.Name:lower():find("fish") or v.Name:lower():find("catch") or v.Name:lower():find("harpoon") or v.Name:lower():find("cast") or v.Name:lower():find("reel") or v.Name:lower():find("sell")) then
+    if v:IsA("RemoteEvent") and (v.Name:lower():find("fish") or v.Name:lower():find("harpoon") or v.Name:lower():find("throw") or v.Name:lower():find("cast") or v.Name:lower():find("catch") or v.Name:lower():find("reel") or v.Name:lower():find("sell") or v.Name:lower():find("oxygen") or v.Name:lower():find("return")) then
         table.insert(remotes, v)
     end
 end
-local sellRemote = remotes[1] -- primeiro pra sell/catch
-print("Remotes encontrados: ", #remotes) -- printa no console pra ver
+print("Paila v7: Encontrados " .. #remotes .. " remotes fish/harpoon!")
 
 -- Vars
 local autoFarm = false
-local infO2 = false
-local fishESP = false
+local autoO2 = false  -- TP surface loop
+local fullESP = false
 local autoSell = false
 local autoEquip = false
 local noFog = false
 local tubeSpeed = 50
 
--- INF O2 FIX (busca todos paths comuns)
-local function infiniteOxygen()
+-- AUTO O2 FIX: TP surface antes morrer (top scripts usam isso)
+local function autoOxygenTP()
     pcall(function()
-        -- Path 1: leaderstats
-        if player:FindFirstChild("leaderstats") then
-            local oxy = player.leaderstats:FindFirstChild("Oxygen") or player.leaderstats:FindFirstChild("O2")
-            if oxy then oxy.Value = math.huge return end
-        end
-        -- Path 2: direto no player
-        local oxy = player:FindFirstChild("Oxygen") or player:FindFirstChild("O2")
-        if oxy then oxy.Value = math.huge return end
-        -- Path 3: character
-        if player.Character then
-            local oxy = player.Character:FindFirstChild("Oxygen") or player.Character:FindFirstChild("O2")
-            if oxy then oxy.Value = math.huge return end
-        end
-        -- Path 4: values folder comum em betas
-        local values = workspace:FindFirstChild("Values") or rs:FindFirstChild("Values")
-        if values then
-            local oxy = values:FindFirstChild("Oxygen") or values:FindFirstChild("O2")
-            if oxy then oxy.Value = math.huge end
+        local o2Value
+        -- Busca O2 em todos paths
+        if player.leaderstats then o2Value = player.leaderstats:FindFirstChild("Oxygen") or player.leaderstats:FindFirstChild("O2") end
+        if not o2Value then o2Value = player:FindFirstChild("Oxygen") or player:FindFirstChild("O2") end
+        if player.Character then o2Value = player.Character:FindFirstChild("Oxygen") or player.Character:FindFirstChild("O2") end
+        if o2Value and o2Value.Value <= 25 then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 150, 0)  -- surface TP
+            print("Paila TP O2 salva!")
         end
     end)
 end
 
--- AUTO FARM FIX (ativa tool + fire todos fish remotes)
-local function autoCatchLoop()
+-- AUTO FARM ULTIMATE: Equip + activate + fire remotes
+local function autoFarmLoop()
     pcall(function()
-        if player.Character and player.Character:FindFirstChildOfClass("Tool") then
-            -- Equipa e ativa harpoon
+        if player.Character then
             local tool = player.Character:FindFirstChildOfClass("Tool")
             if tool and tool.Name:lower():find("harpoon") then
-                tool:Activate() -- simula throw/cast
-                task.wait(0.1)
+                tool:Activate()  -- throw/cast
+                task.wait(0.15)
             end
-            -- Fire todos remotes fish
-            for _, remote in pairs(remotes) do
-                remote:FireServer()
+            -- Fire top 5 remotes (catch/reel/sell)
+            for i = 1, math.min(5, #remotes) do
+                remotes[i]:FireServer()
             end
         end
     end)
 end
 
--- ESP (igual, mas limpa velhos)
-local function fishESP()
+-- FULL ESP: Highlight + Billboard name/rarity + Box + distance (OP visual)
+local function createFullESP(obj)
+    if obj:FindFirstChild("PailaFullESP") then return end
+    local espFolder = Instance.new("Folder")
+    espFolder.Name = "PailaFullESP"
+    espFolder.Parent = obj
+
+    -- Highlight colorido
+    local hl = Instance.new("Highlight")
+    hl.Name = "HL"
+    hl.Parent = espFolder
+    hl.FillTransparency = 0.4
+    hl.OutlineTransparency = 0
+    hl.OutlineColor = Color3.new(1,1,1)
+
+    -- BoxHandleAdornment
+    local box = Instance.new("BoxHandleAdornment")
+    box.Name = "Box"
+    box.Parent = espFolder
+    box.Size = obj.Size + Vector3.new(0.5,0.5,0.5)
+    box.Color3 = Color3.new(1,0,0)
+    box.Transparency = 0.5
+    box.ZIndex = 0
+    box.AlwaysOnTop = true
+
+    -- BillboardGui name + distance
+    local bill = Instance.new("BillboardGui")
+    bill.Name = "Bill"
+    bill.Parent = espFolder
+    bill.Size = UDim2.new(0, 100, 0, 50)
+    bill.StudsOffset = Vector3.new(0, 3, 0)
+    bill.AlwaysOnTop = true
+
+    local text = Instance.new("TextLabel")
+    text.Parent = bill
+    text.Size = UDim2.new(1,0,1,0)
+    text.BackgroundTransparency = 1
+    text.Text = obj.Name .. "\n[ " .. math.floor((obj.PrimaryPart.Position - player.Character.HumanoidRootPart.Position).Magnitude) .. "m ]"
+    text.TextColor3 = Color3.new(1,1,1)
+    text.TextStrokeTransparency = 0
+    text.TextScaled = true
+    text.Font = Enum.Font.GothamBold
+
+    -- Color por raridade
+    local rarity = obj.Name:lower()
+    if rarity:find("mutant") then
+        hl.FillColor = Color3.new(1,.2,0)
+        box.Color3 = Color3.new(1,.2,0)
+        text.TextColor3 = Color3.new(1,1,0)
+    elseif rarity:find("legend") or rarity:find("chest") then
+        hl.FillColor = Color3.new(1,1,0)
+        box.Color3 = Color3.new(1,1,0)
+        text.TextColor3 = Color3.new(1,0,1)
+    else
+        hl.FillColor = Color3.new(0,1,0)
+        box.Color3 = Color3.new(0,1,0)
+    end
+end
+
+local function fullESP()
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and (obj.Name:lower():find("fish") or obj.Name:lower():find("mutant") or obj.Name:lower():find("chest")) and not obj:FindFirstChild("PailaESP") then
-            local hl = Instance.new("Highlight")
-            hl.Name = "PailaESP"
-            hl.Parent = obj
-            hl.FillTransparency = 0.3
-            hl.OutlineTransparency = 0
-            hl.OutlineColor = Color3.new(1,1,1)
-            if obj.Name:lower():find("mutant") then hl.FillColor = Color3.new(1,0,0)
-            elseif obj.Name:lower():find("legend") or obj.Name:lower():find("chest") then hl.FillColor = Color3.new(1,1,0)
-            else hl.FillColor = Color3.new(0,1,0) end
+        if obj:IsA("Model") and (obj.Name:lower():find("fish") or obj.Name:lower():find("mutant") or obj.Name:lower():find("legend") or obj.Name:lower():find("chest")) then
+            createFullESP(obj)
         end
     end
 end
 
-local function autoSellReturn()
-    pcall(function()
-        local stats = player.leaderstats or player
-        local weight = stats:FindFirstChild("Weight") or stats:FindFirstChild("InventoryWeight")
-        local oxy = stats:FindFirstChild("Oxygen") or stats:FindFirstChild("O2")
-        if weight and weight.Value >= 90 then
-            for _, remote in pairs(remotes) do remote:FireServer() end -- sell via remotes
-            print("Paila vendeu full!")
+local function clearESPs()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:FindFirstChild("PailaFullESP") then
+            obj.PailaFullESP:Destroy()
         end
-        if oxy and oxy.Value <= 20 then
-            local hrp = player.Character.HumanoidRootPart
-            tween:Create(hrp, TweenInfo.new(1.5), {CFrame = CFrame.new(hrp.Position.X, 100, hrp.Position.Z)}):Play()
+    end
+end
+
+local function autoSellLoop()
+    pcall(function()
+        local weight = player.leaderstats and (player.leaderstats:FindFirstChild("Weight") or player.leaderstats:FindFirstChild("Inventory"))
+        if weight and weight.Value >= 90 then
+            for _, r in pairs(remotes) do r:FireServer() end
+            print("Paila vendeu full kg!")
         end
     end)
-end
-
-local function fastTube()
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = tubeSpeed
-        player.Character.Humanoid.JumpPower = tubeSpeed * 1.5
-    end
 end
 
 local function equipHarpoon()
@@ -118,105 +153,22 @@ local function equipHarpoon()
     end
 end
 
-local function removeFog()
-    game.Lighting.FogEnd = math.huge
-    game.Lighting.FogStart = math.huge
-    if workspace.Terrain then
-        workspace.Terrain.FogEnd = math.huge
-        workspace.Terrain.FogStart = math.huge
+local function fastTube()
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = tubeSpeed
+        player.Character.Humanoid.JumpPower = 100
     end
 end
 
--- UI TABS
-local FarmTab = Window:NewTab("🤿 Farm FIX")
-local FarmSec = FarmTab:NewSection("Autos Fixados")
+local function noFogFunc()
+    game.Lighting.FogEnd = math.huge
+    game.Lighting.FogStart = math.huge
+    workspace.Terrain.FogEnd = math.huge
+    workspace.Terrain.FogStart = math.huge
+end
 
-FarmSec:NewToggle("Auto Farm (FIX Tool + Remotes)", "Agora pega peixe!", function(state)
-    autoFarm = state
-    spawn(function()
-        while autoFarm do
-            autoCatchLoop()
-            wait(0.1)
-        end
-    end)
-end)
+-- UI
+local FarmTab = Window:NewTab("🤿 Farm ULTIMATE")
+local FarmSec = FarmTab:NewSection("Fixados")
 
-FarmSec:NewToggle("Infinite Oxygen (FIX Paths)", "Busca todos O2!", function(state)
-    infO2 = state
-    spawn(function()
-        while infO2 do
-            infiniteOxygen()
-            wait(0.1)
-        end
-    end)
-end)
-
-FarmSec:NewToggle("Fish + Chest ESP", "Color raridade", function(state)
-    fishESP = state
-    spawn(function()
-        while fishESP do
-            -- Limpa ESP velhos
-            for _, obj in pairs(workspace:GetDescendants()) do
-                if obj:FindFirstChild("PailaESP") then obj.PailaESP:Destroy() end
-            end
-            fishESP()
-            wait(1)
-        end
-    end)
-end)
-
-FarmSec:NewToggle("Auto Sell + Return Low O2", "Full auto", function(state)
-    autoSell = state
-    spawn(function()
-        while autoSell do
-            autoSellReturn()
-            wait(1.5)
-        end
-    end)
-end)
-
-FarmSec:NewToggle("Auto Equip Harpoon", "Sempre pronto", function(state)
-    autoEquip = state
-    spawn(function()
-        while autoEquip do
-            equipHarpoon()
-            wait(1)
-        end
-    end)
-end)
-
-FarmSec:NewSlider("Tube Speed", "Voa no tubo", 500, 16, function(s)
-    tubeSpeed = s
-end)
-
-local UtilTab = Window:NewTab("⚙️ Util")
-local UtilSec = UtilTab:NewSection("Extras")
-
-UtilSec:NewToggle("Remove Fog", "Visão limpa", function(state)
-    noFog = state
-    if state then removeFog() end
-end)
-
-UtilSec:NewButton("TP Surface AGORA", "Emergency O2", function()
-    if player.Character then
-        player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 150, 0)
-    end
-end)
-
-UtilSec:NewButton("Print Remotes (Debug)", "Vê no console", function()
-    for i, v in pairs(remotes) do print(i, v.Name, v.Parent.Name) end
-end)
-
--- LOOP GLOBAL MESTRE
-spawn(function()
-    while wait(0.5) do
-        infiniteOxygen()
-        fishESP()
-        equipHarpoon()
-        if noFog then removeFog() end
-        fastTube()
-        autoSellReturn()
-    end
-end)
-
-print("Paila v6 FIX carregado pro Yoto! Inf O2 + Farm agora pegam REMOTES reais. Ativa e testa, clica 'Print Remotes' pra ver nomes no F9!")
+FarmSec:NewToggle
