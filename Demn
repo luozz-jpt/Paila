@@ -1,128 +1,222 @@
--- Paila Hub v4 - Abyss [BETA] RAYFIELD FIX + KAVO FALLBACK by Paila (pro Yoto)
-local success, Rayfield = pcall(function()
-    return loadstring(game:HttpGet('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua'))()
-end)
-
-local Window
-if success and Rayfield then
-    Window = Rayfield:CreateWindow({
-        Name = "Paila Hub v4 - Abyss (Rayfield Fix)",
-        LoadingTitle = "Carregando pro Yoto...",
-        LoadingSubtitle = "Full OP + Save Config",
-        ConfigurationSaving = {Enabled = true, FolderName = "PailaAbyssV4", FileName = "YotoConfig"},
-        Discord = {Enabled = false},
-        KeySystem = false
-    })
-    print("Rayfield carregado suave!")
-else
-    print("Rayfield falhou, carregando Kavo fallback...")
-    local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-    Window = Library.CreateLib("Paila Hub v4 - Abyss (Kavo Fallback)", "Midnight")
-end
+-- Paila Hub v6 - Abyss [BETA] FIX INF O2 + AUTO FARM by Paila (pro Yoto)
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("Paila Hub v6 - Abyss FIX", "Midnight")
 
 local player = game.Players.LocalPlayer
 local rs = game:GetService("ReplicatedStorage")
-local rsEvents = rs:WaitForChild("Remotes", 5) or rs:FindFirstChild("Events", 5) or rs
 local tween = game:GetService("TweenService")
+local run = game:GetService("RunService")
 
--- Mesmas funções OP do v3 (infiniteOxygen, autoCatchLoop, etc - copiei otimizadas)
-local loops = {}
-local function infiniteOxygen() 
-    local stats = player:FindFirstChild("leaderstats")
-    if stats then local oxy = stats:FindFirstChild("Oxygen") or player:FindFirstChild("Oxygen"); if oxy then oxy.Value = math.huge end end 
-end
-
-local function autoCatchLoop()
-    if player.Character and player.Character:FindFirstChildWhichIsA("Tool") then
-        pcall(function()
-            rsEvents.CastHarpoon:FireServer()
-            task.wait(0.1)
-            rsEvents.CatchFish:FireServer()
-            rsEvents.ReelFish:FireServer()
-        end)
+-- Encontra remotes reais (genérico pros que mudam)
+local remotes = {}
+for _, v in pairs(rs:GetDescendants()) do
+    if v:IsA("RemoteEvent") and (v.Name:lower():find("fish") or v.Name:lower():find("catch") or v.Name:lower():find("harpoon") or v.Name:lower():find("cast") or v.Name:lower():find("reel") or v.Name:lower():find("sell")) then
+        table.insert(remotes, v)
     end
 end
+local sellRemote = remotes[1] -- primeiro pra sell/catch
+print("Remotes encontrados: ", #remotes) -- printa no console pra ver
 
+-- Vars
+local autoFarm = false
+local infO2 = false
+local fishESP = false
+local autoSell = false
+local autoEquip = false
+local noFog = false
+local tubeSpeed = 50
+
+-- INF O2 FIX (busca todos paths comuns)
+local function infiniteOxygen()
+    pcall(function()
+        -- Path 1: leaderstats
+        if player:FindFirstChild("leaderstats") then
+            local oxy = player.leaderstats:FindFirstChild("Oxygen") or player.leaderstats:FindFirstChild("O2")
+            if oxy then oxy.Value = math.huge return end
+        end
+        -- Path 2: direto no player
+        local oxy = player:FindFirstChild("Oxygen") or player:FindFirstChild("O2")
+        if oxy then oxy.Value = math.huge return end
+        -- Path 3: character
+        if player.Character then
+            local oxy = player.Character:FindFirstChild("Oxygen") or player.Character:FindFirstChild("O2")
+            if oxy then oxy.Value = math.huge return end
+        end
+        -- Path 4: values folder comum em betas
+        local values = workspace:FindFirstChild("Values") or rs:FindFirstChild("Values")
+        if values then
+            local oxy = values:FindFirstChild("Oxygen") or values:FindFirstChild("O2")
+            if oxy then oxy.Value = math.huge end
+        end
+    end)
+end
+
+-- AUTO FARM FIX (ativa tool + fire todos fish remotes)
+local function autoCatchLoop()
+    pcall(function()
+        if player.Character and player.Character:FindFirstChildOfClass("Tool") then
+            -- Equipa e ativa harpoon
+            local tool = player.Character:FindFirstChildOfClass("Tool")
+            if tool and tool.Name:lower():find("harpoon") then
+                tool:Activate() -- simula throw/cast
+                task.wait(0.1)
+            end
+            -- Fire todos remotes fish
+            for _, remote in pairs(remotes) do
+                remote:FireServer()
+            end
+        end
+    end)
+end
+
+-- ESP (igual, mas limpa velhos)
 local function fishESP()
     for _, obj in pairs(workspace:GetDescendants()) do
-        if (obj.Name:lower():find("fish") or obj.Name:lower():find("mutant") or obj.Name:lower():find("legend")) and obj:IsA("Model") and not obj:FindFirstChild("PailaESP") then
-            local hl = Instance.new("Highlight", obj); hl.Name = "PailaESP"; hl.FillTransparency = 0.3; hl.OutlineTransparency = 0
-            if obj.Name:lower():find("mutant") then hl.FillColor = Color3.fromRGB(255,0,0)
-            elseif obj.Name:lower():find("legend") then hl.FillColor = Color3.fromRGB(255,215,0)
-            else hl.FillColor = Color3.fromRGB(0,255,0) end
-            hl.OutlineColor = Color3.fromRGB(255,255,255)
+        if obj:IsA("Model") and (obj.Name:lower():find("fish") or obj.Name:lower():find("mutant") or obj.Name:lower():find("chest")) and not obj:FindFirstChild("PailaESP") then
+            local hl = Instance.new("Highlight")
+            hl.Name = "PailaESP"
+            hl.Parent = obj
+            hl.FillTransparency = 0.3
+            hl.OutlineTransparency = 0
+            hl.OutlineColor = Color3.new(1,1,1)
+            if obj.Name:lower():find("mutant") then hl.FillColor = Color3.new(1,0,0)
+            elseif obj.Name:lower():find("legend") or obj.Name:lower():find("chest") then hl.FillColor = Color3.new(1,1,0)
+            else hl.FillColor = Color3.new(0,1,0) end
         end
     end
 end
 
 local function autoSellReturn()
-    local stats = player:FindFirstChild("leaderstats")
-    if stats then
-        local weight = stats:FindFirstChild("Weight")
-        local oxy = stats:FindFirstChild("Oxygen")
-        if weight and weight.Value >= (Rayfield and Rayfield.Flags.WeightLimit or 95) then
-            rsEvents.SellFish:FireServer()
-            if Rayfield then Rayfield:Notify({Title = "Paila", Content = "Vendeu " .. weight.Value .. "kg!", Duration = 3}) end
+    pcall(function()
+        local stats = player.leaderstats or player
+        local weight = stats:FindFirstChild("Weight") or stats:FindFirstChild("InventoryWeight")
+        local oxy = stats:FindFirstChild("Oxygen") or stats:FindFirstChild("O2")
+        if weight and weight.Value >= 90 then
+            for _, remote in pairs(remotes) do remote:FireServer() end -- sell via remotes
+            print("Paila vendeu full!")
         end
         if oxy and oxy.Value <= 20 then
-            local surface = workspace:FindFirstChild("Surface") or CFrame.new(0,100,0)
-            tween:Create(player.Character.HumanoidRootPart, TweenInfo.new(1.5), {CFrame = surface}):Play()
-            task.wait(2); pcall(function() rsEvents.ReturnToSurface:FireServer() end)
+            local hrp = player.Character.HumanoidRootPart
+            tween:Create(hrp, TweenInfo.new(1.5), {CFrame = CFrame.new(hrp.Position.X, 100, hrp.Position.Z)}):Play()
         end
-    end
+    end)
 end
 
-local function fastTube(speed) 
+local function fastTube()
     if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = speed; player.Character.Humanoid.JumpPower = speed * 2
-    end 
+        player.Character.Humanoid.WalkSpeed = tubeSpeed
+        player.Character.Humanoid.JumpPower = tubeSpeed * 1.5
+    end
 end
 
 local function equipHarpoon()
     for _, tool in pairs(player.Backpack:GetChildren()) do
-        if tool:IsA("Tool") and tool.Name:lower():find("harpoon") then player.Character.Humanoid:EquipTool(tool); break end
+        if tool:IsA("Tool") and tool.Name:lower():find("harpoon") then
+            tool.Parent = player.Character
+            break
+        end
     end
 end
 
 local function removeFog()
-    if workspace.Terrain then workspace.Terrain.FogEnd = 100000; workspace.Terrain.FogStart = 100000 end
-    game.Lighting.FogEnd = 100000; game.Lighting.FogStart = 100000
+    game.Lighting.FogEnd = math.huge
+    game.Lighting.FogStart = math.huge
+    if workspace.Terrain then
+        workspace.Terrain.FogEnd = math.huge
+        workspace.Terrain.FogStart = math.huge
+    end
 end
 
--- UI Elements (compatível Rayfield OU Kavo)
-local FarmTab
-if Rayfield then
-    FarmTab = Window:CreateTab("🤿 Farm Principal", 4483362458)
-    FarmTab:CreateSection("Auto Features")
-    
-    FarmTab:CreateToggle({Name = "Auto Farm", CurrentValue = false, Flag = "AutoFarm", Callback = function(v)
-        if v then loops.AutoFarm = task.spawn(function() while Rayfield.Flags.AutoFarm do autoCatchLoop(); task.wait(0.12) end end)
-        else if loops.AutoFarm then task.cancel(loops.AutoFarm) end end
-    end})
-    
-    FarmTab:CreateToggle({Name = "Inf Oxygen", CurrentValue = false, Flag = "InfO2", Callback = function(v)
-        if v then loops.InfO2 = task.spawn(function() while Rayfield.Flags.InfO2 do infiniteOxygen(); task.wait(0.2) end end) end
-    end})
-    
-    -- + outros toggles/sliders igual v3...
-else  -- Kavo fallback
-    local FarmSec = FarmTab:NewSection("Auto Features")
-    FarmTab:NewToggle("Auto Farm", "Catch + Reel", function(state)
-        spawn(function() while state do autoCatchLoop(); wait(0.12) end end)
+-- UI TABS
+local FarmTab = Window:NewTab("🤿 Farm FIX")
+local FarmSec = FarmTab:NewSection("Autos Fixados")
+
+FarmSec:NewToggle("Auto Farm (FIX Tool + Remotes)", "Agora pega peixe!", function(state)
+    autoFarm = state
+    spawn(function()
+        while autoFarm do
+            autoCatchLoop()
+            wait(0.1)
+        end
     end)
-    -- + toggles Kavo style...
-end
+end)
 
--- Global loop (roda sempre)
-task.spawn(function()
-    while task.wait(1) do
-        infiniteOxygen(); fishESP(); equipHarpoon(); removeFog()
-        fastTube((Rayfield and Rayfield.Flags.TubeSpeed) or 50)
+FarmSec:NewToggle("Infinite Oxygen (FIX Paths)", "Busca todos O2!", function(state)
+    infO2 = state
+    spawn(function()
+        while infO2 do
+            infiniteOxygen()
+            wait(0.1)
+        end
+    end)
+end)
+
+FarmSec:NewToggle("Fish + Chest ESP", "Color raridade", function(state)
+    fishESP = state
+    spawn(function()
+        while fishESP do
+            -- Limpa ESP velhos
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:FindFirstChild("PailaESP") then obj.PailaESP:Destroy() end
+            end
+            fishESP()
+            wait(1)
+        end
+    end)
+end)
+
+FarmSec:NewToggle("Auto Sell + Return Low O2", "Full auto", function(state)
+    autoSell = state
+    spawn(function()
+        while autoSell do
+            autoSellReturn()
+            wait(1.5)
+        end
+    end)
+end)
+
+FarmSec:NewToggle("Auto Equip Harpoon", "Sempre pronto", function(state)
+    autoEquip = state
+    spawn(function()
+        while autoEquip do
+            equipHarpoon()
+            wait(1)
+        end
+    end)
+end)
+
+FarmSec:NewSlider("Tube Speed", "Voa no tubo", 500, 16, function(s)
+    tubeSpeed = s
+end)
+
+local UtilTab = Window:NewTab("⚙️ Util")
+local UtilSec = UtilTab:NewSection("Extras")
+
+UtilSec:NewToggle("Remove Fog", "Visão limpa", function(state)
+    noFog = state
+    if state then removeFog() end
+end)
+
+UtilSec:NewButton("TP Surface AGORA", "Emergency O2", function()
+    if player.Character then
+        player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 150, 0)
+    end
+end)
+
+UtilSec:NewButton("Print Remotes (Debug)", "Vê no console", function()
+    for i, v in pairs(remotes) do print(i, v.Name, v.Parent.Name) end
+end)
+
+-- LOOP GLOBAL MESTRE
+spawn(function()
+    while wait(0.5) do
+        infiniteOxygen()
+        fishESP()
+        equipHarpoon()
+        if noFog then removeFog() end
+        fastTube()
         autoSellReturn()
     end
 end)
 
-if Rayfield then Rayfield:Notify({Title = "Paila v4", Content = "Rayfield fixado pro Yoto! 😈", Duration = 5})
-else print("Kavo UI aberta! Toggles no RightShift.") end
-
-print("Paila v4 rodando full pro Abyss! UI sempre abre agora.")
+print("Paila v6 FIX carregado pro Yoto! Inf O2 + Farm agora pegam REMOTES reais. Ativa e testa, clica 'Print Remotes' pra ver nomes no F9!")
