@@ -1,0 +1,273 @@
+-- Paila Hub v3 - Abyss [BETA] RAYFIELD EDITION by Paila (pro Yoto, full save config)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Paila Hub v3 - Abyss",
+   LoadingTitle = "Carregando pro Yoto...",
+   LoadingSubtitle = "Full OP Farm + Save Config",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "PailaAbyss",
+      FileName = "YotoConfig"
+   },
+   Discord = {
+      Enabled = false,
+   },
+   KeySystem = false
+})
+
+local player = game.Players.LocalPlayer
+local rs = game:GetService("ReplicatedStorage")
+local rsEvents = rs:WaitForChild("Remotes") or rs:FindFirstChild("Events") or rs
+local run = game:GetService("RunService")
+local tween = game:GetService("TweenService")
+
+-- Vars globais
+local connections = {}
+local loops = {}
+
+-- Funções (igual v2 mas otimizadas)
+local function infiniteOxygen()
+   local stats = player:FindFirstChild("leaderstats")
+   if stats then
+      local oxy = stats:FindFirstChild("Oxygen") or player:FindFirstChild("Oxygen")
+      if oxy then oxy.Value = math.huge end
+   end
+end
+
+local function autoCatchLoop()
+   if player.Character and player.Character:FindFirstChildWhichIsA("Tool") then
+      pcall(function()
+         rsEvents.CastHarpoon:FireServer()
+         task.wait(0.1)
+         rsEvents.CatchFish:FireServer()
+         rsEvents.ReelFish:FireServer()
+      end)
+   end
+end
+
+local function equipHarpoon()
+   for _, tool in pairs(player.Backpack:GetChildren()) do
+      if tool:IsA("Tool") and tool.Name:lower():find("harpoon") then
+         player.Character.Humanoid:EquipTool(tool)
+         break
+      end
+   end
+end
+
+local function fishESP()
+   for _, obj in pairs(workspace:GetDescendants()) do
+      if (obj.Name:lower():find("fish") or obj.Name:lower():find("mutant") or obj.Name:lower():find("legend")) and 
+         obj:IsA("Model") and not obj:FindFirstChild("PailaESP") then
+         
+         local hl = Instance.new("Highlight")
+         hl.Name = "PailaESP"
+         hl.Parent = obj
+         hl.FillTransparency = 0.3
+         hl.OutlineTransparency = 0
+         
+         if obj.Name:lower():find("mutant") then
+            hl.FillColor = Color3.fromRGB(255,0,0)
+         elseif obj.Name:lower():find("legend") then
+            hl.FillColor = Color3.fromRGB(255,215,0)
+         else
+            hl.FillColor = Color3.fromRGB(0,255,0)
+         end
+         hl.OutlineColor = Color3.fromRGB(255,255,255)
+      end
+   end
+end
+
+local function autoSellReturn()
+   local stats = player:FindFirstChild("leaderstats")
+   if stats then
+      local weight = stats:FindFirstChild("Weight")
+      local oxy = stats:FindFirstChild("Oxygen")
+      
+      if weight and weight.Value >= Rayfield.Flags.WeightLimit then
+         rsEvents.SellFish:FireServer()
+         Rayfield:Notify({Title = "Paila Hub", Content = "Vendeu " .. weight.Value .. "kg!", Duration = 3})
+      end
+      
+      if oxy and oxy.Value <= 20 then
+         local surface = workspace:FindFirstChild("Surface") or CFrame.new(0, 100, 0)
+         tween:Create(player.Character.HumanoidRootPart, TweenInfo.new(1.5), {CFrame = surface}):Play()
+         task.wait(2)
+         pcall(function() rsEvents.ReturnToSurface:FireServer() end)
+      end
+   end
+end
+
+local function fastTube(speed)
+   if player.Character and player.Character:FindFirstChild("Humanoid") then
+      player.Character.Humanoid.WalkSpeed = speed
+      player.Character.Humanoid.JumpPower = speed * 2
+   end
+end
+
+local function removeFog()
+   if workspace.Terrain then
+      workspace.Terrain.FogEnd = 100000
+      workspace.Terrain.FogStart = 100000
+   end
+   game.Lighting.FogEnd = 100000
+   game.Lighting.FogStart = 100000
+end
+
+-- TAB PRINCIPAL FARM
+local FarmTab = Window:CreateTab("🤿 Farm Principal", 4483362458)
+local FarmSection = FarmTab:CreateSection("Auto Features")
+
+FarmTab:CreateToggle({
+   Name = "Auto Farm (Catch + Instant Reel)",
+   CurrentValue = false,
+   Flag = "AutoFarm",
+   Callback = function(Value)
+      if Value then
+         loops.AutoFarm = task.spawn(function()
+            while Rayfield.Flags.AutoFarm do
+               autoCatchLoop()
+               task.wait(0.12)
+            end
+         end)
+      else
+         task.cancel(loops.AutoFarm)
+      end
+   end,
+})
+
+FarmTab:CreateToggle({
+   Name = "Infinite Oxygen",
+   CurrentValue = false,
+   Flag = "InfO2",
+   Callback = function(Value)
+      if Value then
+         loops.InfO2 = task.spawn(function()
+            while Rayfield.Flags.InfO2 do
+               infiniteOxygen()
+               task.wait(0.2)
+            end
+         end)
+      end
+   end,
+})
+
+FarmTab:CreateToggle({
+   Name = "Fish ESP (Color por Raridade)",
+   CurrentValue = false,
+   Flag = "FishESP",
+   Callback = function(Value)
+      if Value then
+         loops.ESP = task.spawn(function()
+            while Rayfield.Flags.FishESP do
+               fishESP()
+               task.wait(1.5)
+            end
+         end)
+      end
+   end,
+})
+
+FarmTab:CreateToggle({
+   Name = "Auto Sell + Return Low O2",
+   CurrentValue = false,
+   Flag = "AutoSell",
+   Callback = function(Value)
+      if Value then
+         loops.Sell = task.spawn(function()
+            while Rayfield.Flags.AutoSell do
+               autoSellReturn()
+               task.wait(2)
+            end
+         end)
+      end
+   end,
+})
+
+FarmTab:CreateToggle({
+   Name = "Auto Equip Harpoon",
+   CurrentValue = false,
+   Flag = "AutoEquip",
+   Callback = function(Value)
+      if Value then
+         loops.Equip = task.spawn(function()
+            while Rayfield.Flags.AutoEquip do
+               equipHarpoon()
+               task.wait(0.8)
+            end
+         end)
+      end
+   end,
+})
+
+-- SLIDERS
+FarmTab:CreateSlider({
+   Name = "Tube Speed Boost",
+   Range = {16, 120},
+   Increment = 2,
+   Suffix = "Speed",
+   CurrentValue = 50,
+   Flag = "TubeSpeed",
+   Callback = function(Value)
+      fastTube(Value)
+   end,
+})
+
+FarmTab:CreateSlider({
+   Name = "Auto Sell Weight Limit",
+   Range = {80, 120},
+   Increment = 5,
+   Suffix = "kg",
+   CurrentValue = 95,
+   Flag = "WeightLimit",
+   Callback = function() end,
+})
+
+-- SEGUNDA TAB VISUAL
+local VisualTab = Window:CreateTab("👁️ Visual", 4483362458)
+VisualTab:CreateToggle({
+   Name = "Remove Fog/Neblina",
+   CurrentValue = false,
+   Flag = "NoFog",
+   Callback = function(Value)
+      if Value then removeFog() end
+   end,
+})
+
+-- BUTTONS UTILITY
+local UtilTab = Window:CreateTab("⚙️ Utility", 4483362458)
+UtilTab:CreateButton({
+   Name = "Teleport Surface (Emergency)",
+   Callback = function()
+      local surface = workspace:FindFirstChild("Surface") or CFrame.new(0, 100, 0)
+      player.Character.HumanoidRootPart.CFrame = surface
+      Rayfield:Notify({Title = "Teleport", Content = "Surface!", Duration = 2})
+   end,
+})
+
+UtilTab:CreateButton({
+   Name = "Rejoin Server",
+   Callback = function()
+      game:GetService("TeleportService"):Teleport(game.PlaceId, player)
+   end,
+})
+
+-- LOOP GLOBAL BACKGROUND
+task.spawn(function()
+   while task.wait(1) do
+      if Rayfield.Flags.NoFog then removeFog() end
+      if Rayfield.Flags.FishESP then fishESP() end
+      if Rayfield.Flags.InfO2 then infiniteOxygen() end
+      if Rayfield.Flags.AutoEquip then equipHarpoon() end
+      fastTube(Rayfield.Flags.TubeSpeed or 16)
+   end
+end)
+
+Rayfield:Notify({
+   Title = "Paila Hub v3 Rayfield",
+   Content = "Carregado pro Yoto! Config salva auto.",
+   Duration = 5,
+   Image = 4483362458
+})
+
+print("Paila Hub v3 RAYFIELD pronto pro Yoto! Toggles salvam, sliders custom, ESP colorido. Testa e fala se remote deu erro!")
